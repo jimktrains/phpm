@@ -35,6 +35,7 @@ then
 fi
 if [ $# -gt 0 ]
 then
+  word=$1
   # parse a few options
   if [ $1 = "--clear" ]
   then
@@ -50,7 +51,11 @@ then
   then
     print_usage
   fi
-  URLNAME=$(echo $1 | urlencode)
+  if [ $1 = "--short" ]; then
+    SHORT=1
+    word=$2
+  fi
+  URLNAME=$(echo $word | urlencode)
   CACHE_FILENAME=$CACHEDIR/$URLNAME
   # check cache
   if [ ! -e $CACHE_FILENAME ]
@@ -99,6 +104,7 @@ then
   fi
   if [ -e $CACHE_FILENAME ]
   then
+    if [ -z $SHORT ]; then
         text=$(fold -w80 $CACHE_FILENAME)
         file_lines=$(echo "$text" | wc -l | awk '{print $1}')
         lines=$(tput lines)
@@ -108,6 +114,9 @@ then
             echo $file_lines
             echo "$text" | $PAGER
         fi
+    elif [ -n $SHORT ]; then
+        sed -n '/Description/,${/Parameters/q;p}' $CACHE_FILENAME | head -n 3 | tail -n 1
+    fi
   else
     echo "No matches found for '$1'"
     exit -1

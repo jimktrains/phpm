@@ -19,6 +19,7 @@ Usage
 -----
 phpm <function>
 phpm --clear clears the cache
+phpm --short shows the method signature on a single line
 
 Thanks to Troels Knak-Nielsen ((https://github.com/troelskn) for allowing me to place this up here.
 Original: http://blogs.sitepoint.com/php-manual-cli-style-20/
