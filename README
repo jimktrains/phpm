@@ -1,0 +1,24 @@
+This utility allows the php manual to be browsed via the commandline
+and hence from editors.
+
+The cache is placed in .phpm
+
+Installation
+-----------
+sudo apt-get install wget sed tidy xmlstarlet konwert
+
+wget http://www.aaronsw.com/2002/html2text/html2text.py
+wget http://www.shelldorado.de/scripts/cmds/urlencode.tx
+
+Please these files (without extentions) and phpm in a dir reachable
+by your $PATH
+
+Make them executable.
+
+Usage
+-----
+phpm <function>
+phpm --clear clears the cache
+
+Thanks to Troels Knak-Nielsen ((https://github.com/troelskn) for allowing me to place this up here.
+Original: http://blogs.sitepoint.com/php-manual-cli-style-20/

@@ -1,0 +1,103 @@
+#!/bin/bash
+# phpm
+# commandline php-manual interface
+# Kudos to Havard Eide and Sean Coates for the original idea
+#
+# author: Troels Knak-Nielsen <troelskn@gmail.com>
+# version: 2007-11-27
+#
+# dependencies:
+#   wget        sudo apt-get install wget
+#   sed         sudo apt-get install sed
+#   tidy        sudo apt-get install tidy
+#   xmlstarlet  sudo apt-get install xmlstarlet
+#   konwert     sudo apt-get install konwert
+#   html2text   get from http://www.aaronsw.com/2002/html2text/html2text.py
+#               symlink to ~/bin/html2text
+#   urlencode   get from http://www.shelldorado.de/scripts/cmds/urlencode.txt
+#               symlink to ~/bin/urlencode
+function print_usage {
+  echo "USAGE: phpm <function>"
+  echo "To clear cache: phpm --clear"
+  exit 0
+}
+# create cachedir on first run
+CACHEDIR=~/.phpm
+if [ ! -e $CACHEDIR ]
+then
+  mkdir $CACHEDIR
+fi
+if [ $# -gt 0 ]
+then
+  # parse a few options
+  if [ $1 = "--clear" ]
+  then
+    echo "clearing cache"
+    rm -r $CACHEDIR
+    exit 0
+  fi
+  if [ $1 = "--help" ]
+  then
+    print_usage
+  fi
+  if [ $1 = "-?" ]
+  then
+    print_usage
+  fi
+  URLNAME=$(echo $1 | urlencode)
+  CACHE_FILENAME=$CACHEDIR/$URLNAME
+  # check cache
+  if [ ! -e $CACHE_FILENAME ]
+  then
+    # fetch from HTTP
+    HREF=http://www.php.net/manual-lookup.php?function=$URLNAME
+    RESPONSE=$(wget --quiet -O - $HREF)
+    if [ $? != 0 ]
+    then
+      echo "HTTP error" 1>&2
+      exit $?
+    fi
+    # process response
+    # test if function has direct match
+    if echo $RESPONSE | grep -Eiq '<div([^>]*)class="refentry">'
+    then
+      # grap and format output
+      # the first sed collapses blank lines, the second formats headers
+      echo $RESPONSE \
+        | tidy -latin1 -asxhtml --input-encoding utf8 --output-xml true --numeric-entities true 2>/dev/null \
+        | xmlstarlet select --net --html -t -c "//*[@class='refentry']" 2>/dev/null \
+        | tidy -latin1 --input-encoding utf8 -asxhtml 2>/dev/null \
+        | konwert utf8-ascii \
+        | html2text 2>&1 \
+        | sed -n 'G; s/\n/&&/; /^\([ -~]*\n\).*\n\1/d; s/\n//; h; P' \
+        | sed -e '/^# \(.*\)$/ { s/^# \(.*\)/\1/p ; s/\(.\{1,1\}\)/=/g }' -e '/^## \(.*\)$/ { s/^## \(.*\)/\n\1/p ; s/\(.\{1,1\}\)/-/g }' -e '/^### \(.*\)$/ { s/^### \(.*\)/\n\1/p ; s/\(.\{1,1\}\)/~/g }' \
+        > $CACHE_FILENAME
+    # test if there are any "best" matches
+    elif echo $RESPONSE | grep -Eiq '<a href="\/manual\/en\/function[^>]*><b>'
+    then
+      echo "Best matches for '$1':" > $CACHE_FILENAME
+      echo $RESPONSE \
+        | tidy -latin1 -asxhtml --input-encoding utf8 --output-xml true --numeric-entities true --wrap 0 2>/dev/null \
+        | sed -n 's/.*<a href="\/manual\/en\/function[^>]*><b>\([^<]\{1,\}\)<.*/\1/p' \
+        >> $CACHE_FILENAME
+    # test if there are any "weak" matches
+    elif echo $RESPONSE | grep -Eiq '<a href="\/manual\/en\/function[^>]*>[^<]+'
+    then
+      echo "Possible matches for '$1':" > $CACHE_FILENAME
+      echo $RESPONSE \
+        | tidy -latin1 -asxhtml --input-encoding utf8 --output-xml true --numeric-entities true --wrap 0 2>/dev/null \
+        | sed -n 's/.*<a href="\/manual\/en\/function[^>]*>[^<]\{1,\}\([^<]\{1,\}\)<.*/\1/p' \
+        >> $CACHE_FILENAME
+    fi
+  fi
+  if [ -e $CACHE_FILENAME ]
+  then
+    cat $CACHE_FILENAME
+  else
+    echo "No matches found for '$1'"
+    exit -1
+  fi
+else
+  print_usage
+fi
+
