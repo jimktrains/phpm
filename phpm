@@ -6,6 +6,9 @@
 # author: Troels Knak-Nielsen <troelskn@gmail.com>
 # version: 2007-11-27
 #
+# author: Jim Keener <jim@jimkeener.com>
+# version: 2011-May-18
+#
 # dependencies:
 #   wget        sudo apt-get install wget
 #   sed         sudo apt-get install sed
@@ -21,6 +24,9 @@ function print_usage {
   echo "To clear cache: phpm --clear"
   exit 0
 }
+if [ -z $PAGER ]; then
+    PAGER=more #I think more is more standard but I like less better
+fi
 # create cachedir on first run
 CACHEDIR=~/.phpm
 if [ ! -e $CACHEDIR ]
@@ -57,6 +63,7 @@ then
       echo "HTTP error" 1>&2
       exit $?
     fi
+
     # process response
     # test if function has direct match
     if echo $RESPONSE | grep -Eiq '<div([^>]*)class="refentry">'
@@ -92,7 +99,15 @@ then
   fi
   if [ -e $CACHE_FILENAME ]
   then
-    cat $CACHE_FILENAME
+        text=$(fold -w80 $CACHE_FILENAME)
+        file_lines=$(echo "$text" | wc -l | awk '{print $1}')
+        lines=$(tput lines)
+        if [ $file_lines -lt $lines ]; then
+            echo "$text"
+        else
+            echo $file_lines
+            echo "$text" | $PAGER
+        fi
   else
     echo "No matches found for '$1'"
     exit -1
@@ -100,4 +115,3 @@ then
 else
   print_usage
 fi
-
