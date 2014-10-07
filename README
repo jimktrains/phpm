@@ -8,7 +8,7 @@ Installation
 sudo apt-get install wget sed tidy xmlstarlet konwert
 
 wget http://www.aaronsw.com/2002/html2text/html2text.py
-wget http://www.shelldorado.de/scripts/cmds/urlencode.tx
+wget http://www.shelldorado.de/scripts/cmds/urlencode.txt
 
 Please these files (without extentions) and phpm in a dir reachable
 by your $PATH
